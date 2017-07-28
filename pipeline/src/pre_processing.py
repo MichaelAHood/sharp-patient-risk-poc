@@ -240,7 +240,7 @@ def fill_missing(df):
     # Fill with a string
     df['rrt_reason'] = df['rrt_reason'].fillna("Staff Concern/Unknown -- Imputation")
     # Cast this binary string to 0 or 1
-    df['sex'] = df['sex'].apply(lambda x: 1 if 'M' else 0)
+    df['sex'] = df['sex'].apply(lambda x: 1 if x == 'M' else 0)
     #fill with mean
     for col in df.columns:
         if df[col].isnull().sum() > 0:
