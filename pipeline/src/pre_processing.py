@@ -243,7 +243,7 @@ def fill_missing(df):
     df['sex'] = df['sex'].apply(lambda x: 1 if x == 'M' else 0)
     # Fill the columns that are not in fillna_with_zero with the mean instead.
     fillna_with_mean = list(set(df.columns) - set(fillna_with_zero))
-    for col in fill_with_mean:
+    for col in fillna_with_mean:
         mean_val = df[col].mean()
         df[col] = df[col].fillna(mean_val)
     return df
