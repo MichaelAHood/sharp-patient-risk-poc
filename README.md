@@ -99,6 +99,7 @@ Exploring different modeling algorithms -- for reference only
 Extracts a small subset of patients, collects their statistics into a modeling tables based on different timeframes, loads the saved model, uses model to generate risk scores, then writes the scores and modeling tables to
 
 #### gbc_base.compressed
+Note: The trained model was removed from the public facing repo.
 The saved model file, in sklearn's [joblib](http://scikit-learn.org/stable/modules/model_persistence.html) format.
 
 
