@@ -1,11 +1,21 @@
-with obesity_status AS
-
-(SELECT
-     ce.encntr_id
-   , CASE WHEN ce.result_val = 'Yes' THEN 1 ELSE 0 END AS 'obese'
- FROM clinical_event ce
- WHERE ce.event_cd = '49810672'
+WITH heights_weights AS
+(
+SELECT h.encntr_id, height, weight
+FROM
+   (
+   SELECT encntr_id, avg_value AS height 
+   FROM height_weight
+   WHERE hw = 'height'
+   ) h
+LEFT JOIN
+   (
+   SELECT encntr_id, avg_value AS weight
+   FROM height_weight
+   WHERE hw = 'weight'
+   ) w
+ON h.encntr_id = w.encntr_id
 )
+
 
 
 SELECT DISTINCT
@@ -18,16 +28,17 @@ SELECT DISTINCT
   , bu_nal
   , dialysis
   , smoker
+  , height
+  , weight
   , prev_rrt
-  , CASE WHEN obese IS NULL THEN 0 ELSE obese END AS 'obese'
-
+ 
 FROM (
 
   SELECT
       non_rrts.encntr_id
-	, age
+  , age
     , sex
-    , race	
+    , race  
     , CASE WHEN ce.event_cd = '679984' THEN 1 else 0 END AS 'on_iv'
     , CASE WHEN 
         ce.event_cd = '2797130' OR
@@ -89,6 +100,8 @@ FROM (
                     '54411998',  
                     '186470117') 
   ) chars
-LEFT JOIN obesity_status os
-ON chars.encntr_id=os.encntr_id
+
+LEFT JOIN heights_weights hw
+ON chars.encntr_id=hw.encntr_id;
+
 ;
