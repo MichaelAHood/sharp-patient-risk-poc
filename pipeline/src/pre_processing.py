@@ -235,15 +235,15 @@ def fill_missing(df):
     # Fill these NA categoricals with 0
     fillna_with_zero = ["anticoagulants", "antipsychotics" , "bu_nal",            
                         "chemo", "narc_ans", "narcotics", 
-                        "obese", "on_iv", "prev_rrt", "smoker"]
+                        "on_iv", "prev_rrt", "smoker"]
     df[fillna_with_zero] = df[fillna_with_zero].fillna(0)
     # Fill with a string
     df['rrt_reason'] = df['rrt_reason'].fillna("Staff Concern/Unknown -- Imputation")
     # Cast this binary string to 0 or 1
     df['sex'] = df['sex'].apply(lambda x: 1 if x == 'M' else 0)
-    #fill with mean
-    for col in df.columns:
-        if df[col].isnull().sum() > 0:
-            mean_val = df[col].mean()
-            df[col] = df[col].fillna(mean_val)
+    # Fill the columns that are not in fillna_with_zero with the mean instead.
+    fillna_with_mean = list(set(df.columns) - set(fillna_with_zero))
+    for col in fill_with_mean:
+        mean_val = df[col].mean()
+        df[col] = df[col].fillna(mean_val)
     return df
