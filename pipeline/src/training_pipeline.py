@@ -114,6 +114,9 @@ df_avg = impala_to_pandas(non_rrt_queries[1], CUR)
 df_char = impala_to_pandas(non_rrt_queries[2], CUR)
 df_meds = impala_to_pandas(non_rrt_queries[3], CUR)
 
+df_rrt_char.to_csv("df_rrt_char.csv", index=False)
+df_char.to_csv("df_char.csv", index=False)
+
 # Preprocess and combine the dataframes for the RRT events
 rrt_info = remove_duplicate_rrt_events(df_rrt_info)
 rrt_recent = pre_process_most_recent(df_rrt_recent, recent_col_names, is_negative_class=False)
@@ -147,6 +150,9 @@ df_master = pd.concat([df1, df2])
 to_drop = ["race", "avgCO2", "recentCO2", "avgHR","recentHR", 
            "avgGCS", "recentGCS", "encntr_id"]
 df_master = df_master.drop(to_drop, axis=1)
+
+#To simplify things
+df_master.to_csv("df_master_intermediate.csv", index=False)
 
 # Fill the missing values and drop duplicates
 df_final = fill_missing(df_master).drop_duplicates()

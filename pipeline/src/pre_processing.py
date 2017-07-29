@@ -5,6 +5,7 @@ import datetime as datetime
 from impala.util import as_pandas
 
 # The following dictionaries map Cerner event codes to human readable column names.
+
 #avg_col_names = {   
 #    '2700541': "avgHR",      
 #    '703540':  "avgRR",
@@ -109,7 +110,7 @@ def pre_process_most_recent(df, column_name_mappings, is_negative_class=False):
     Output:       Pandas dataframe
     Description:  Group most recent values from chart data on a unique identifying key.
 
-    			  1. Deduplicate repeated rows.
+                  1. Deduplicate repeated rows.
                   2. Cast data to numeric.
                   3. Pivot the dataframe on an identifying column. Pivot column is 'encounter_id' 
                      for patients without an RRT event (is_negative_class=True) or pivot column 
@@ -124,7 +125,7 @@ def pre_process_most_recent(df, column_name_mappings, is_negative_class=False):
         deduped = df
     else: 
         pivot_index = 'rrt_ce_id'
-        df.columns = ["encntr_id" ,"rrt_ce_id", "event_cd",	"recent_result"]
+        df.columns = ["encntr_id" ,"rrt_ce_id", "event_cd", "recent_result"]
         deduped = df.drop('encntr_id', axis=1).drop_duplicates()
     # A number of results contain a blank space or NULL-- filter those out
     most_recent = deduped[(deduped.recent_result != " ") &
@@ -146,7 +147,7 @@ def pre_process_avg_values(df, column_name_mappings, is_negative_class=False):
     Output:       Pandas dataframe
     Description:  Group all average columns values from chart data on a unique identifying key.
 
-    			  1. Drop rows with null values.
+                  1. Drop rows with null values.
                   2. Pivot the dataframe on an identifying column. Pivot column is 'encounter_id' 
                      for patients without an RRT event (is_negative_class=True) or pivot column 
                      is 'rrt_ce_id' for patients with an RRT event (is_negative_class=False).
@@ -180,15 +181,27 @@ def pre_process_characteristics(df, is_negative_class=False):
                      for patients without an RRT event (is_negative_class=True) or pivot column 
                      is 'rrt_ce_id' for patients with an RRT event (is_negative_class=False).    
     """
-
+    
     if is_negative_class:
+        height_weight = df[['encntr_id', 'height', 'weight']]
+        height_weight.to_csv("hw.csv", index=False)
+        df = df.drop(['height', 'weight'], axis=1)
         cols = ['age', 'sex', 'race']
         vals = df[['encntr_id'] + cols].drop_duplicates()
         # These are the people who did not have RRT events. We key them by encounter id
         grouped = df.drop(cols, axis=1).groupby('encntr_id').sum()
         res = grouped.merge(vals, how='left', right_on='encntr_id', left_index=True)
-        return res
-    return df.drop('encntr_id', axis=1).groupby('rrt_ce_id').sum()
+        no_rrt = res.merge(height_weight, how="left", left_on="encntr_id", right_on="encntr_id")
+        
+        return no_rrt
+        
+    height_weight = df[['rrt_ce_id', 'height', 'weight']]
+    height_weight.to_csv("rrt-hw.csv", index=False)
+    df = df.drop(['height', 'weight'], axis=1)
+    res = df.drop('encntr_id', axis=1).groupby('rrt_ce_id').sum()
+    rrt = res.merge(height_weight, how="left", left_index=True, right_on="rrt_ce_id").drop_duplicates()
+    
+    return rrt
 
 def pre_process_medications(df):
     """
@@ -234,16 +247,22 @@ def fill_missing(df):
 
     # Fill these NA categoricals with 0
     fillna_with_zero = ["anticoagulants", "antipsychotics" , "bu_nal",            
-                        "chemo", "narc_ans", "narcotics", 
-                        "on_iv", "prev_rrt", "smoker"]
+                    "chemo", "narc_ans", "narcotics", "dialysis",
+                    "on_iv", "prev_rrt", "smoker"]
+    
     df[fillna_with_zero] = df[fillna_with_zero].fillna(0)
     # Fill with a string
     df['rrt_reason'] = df['rrt_reason'].fillna("Staff Concern/Unknown -- Imputation")
     # Cast this binary string to 0 or 1
     df['sex'] = df['sex'].apply(lambda x: 1 if x == 'M' else 0)
-    # Fill the columns that are not in fillna_with_zero with the mean instead.
-    fillna_with_mean = list(set(df.columns) - set(fillna_with_zero))
+
+    fillna_with_mean = ['recentMAP', 'avgDBP',
+                    'recentSBP','avgPeriPR','recentSpO2',
+                    'recentRR','avgSpO2','avgSBP',
+                    'recentDBP','recentPeriPR','avgRR',
+                    'avgMAP','avgTemp','recentTemp']
+    
     for col in fillna_with_mean:
-        mean_val = df[col].mean()
+        mean_val = df[col][df[col].notnull()].mean()
         df[col] = df[col].fillna(mean_val)
     return df
